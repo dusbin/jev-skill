@@ -66,6 +66,37 @@ test('extractOptions（回归）：自然语言选项列表（「选项 甲、�
   );
 });
 
+test('extractOptions：支持「名字=描述」的选项列表（分流任务里描述决定边界）', () => {
+  const o = extractOptions(
+    '消息 选项 物流=发货、出库、运输、派送、签收；退款=退款、退货、退差价；产品故障=质量、破损、缺件；其他=以上之外的咨询或建议',
+  );
+  assert.deepEqual(o.map((x) => x.label), ['物流', '退款', '产品故障', '其他']);
+  assert.equal(o[0].text, '发货、出库、运输、派送、签收', '描述里的顿号不能被当成选项分隔符');
+  assert.equal(o[3].text, '以上之外的咨询或建议');
+});
+
+test('extractOptions：带等号时分隔符只用分号，顿号留给描述内部', () => {
+  const o = extractOptions('选项 甲=一、二、三；乙=四、五');
+  assert.deepEqual(o.map((x) => x.label), ['甲', '乙']);
+  assert.equal(o[0].text, '一、二、三');
+  assert.equal(o[1].text, '四、五');
+});
+
+test('extractOptions（已知限制）：选项列表必须写在一行内', () => {
+  // 多行列表暂不支持：正文换行后无法可靠区分「续行的选项」与「后面的正文」，
+  // 强行支持会把正文当成选项（这是比「抽不到」更糟的错）。所以宁可不抽。
+  assert.deepEqual(extractOptions('选项 甲=一、二、三\n乙=四、五'), []);
+  // 但把列表写在一行里就正常
+  assert.equal(extractOptions('选项 甲=一、二、三；乙=四、五').length, 2);
+});
+
+test('extractOptions：名字仍是短标签约束，描述过长则整体放弃', () => {
+  const tooLongDesc = extractOptions(`选项 甲=${'长'.repeat(61)}；乙=短`);
+  assert.deepEqual(tooLongDesc, []);
+  const tooLongName = extractOptions('选项 这个名字实在是太长了完全超过十六个字符的约束=描述；乙=描述');
+  assert.deepEqual(tooLongName, []);
+});
+
 test('extractOptions（守卫）：没有列表标记词的普通顿号并列不该被当成选项', () => {
   for (const text of [
     '今天我在超市买了苹果、香蕉、橙子，都很新鲜',
@@ -168,6 +199,24 @@ test('checkInjection：正常输入不误报', () => {
 });
 
 /* ---------------------------- 模板生成 ---------------------------- */
+
+test('客服领域的两个 noul 闸门在任何输入下都该出（与有没有选项无关）', () => {
+  // 「客户是否要退款」「订单是否已发货」是工单系统的固定分支条件，
+  // 不是「用户没给选项时的替代品」——带选项时也应当出现。
+  const domain = requireDomain('客服');
+  const withOptions = templateCandidates({ domain, input: '我的订单三天没发货了 选项 物流、退款、产品故障、其他' });
+  const ids = withOptions.map((c) => c.template);
+  assert.ok(ids.includes('service-noul-refund'), `带选项时也该出退款闸门：${ids.join(', ')}`);
+  assert.ok(ids.includes('service-noul-shipped'), `带选项时也该出已发货闸门：${ids.join(', ')}`);
+  assert.ok(ids.includes('service-choice-options'));
+
+  const noOptions = templateCandidates({ domain, input: '我的订单三天没发货了' });
+  const ids2 = noOptions.map((c) => c.template);
+  assert.ok(ids2.includes('service-noul-refund'));
+  assert.ok(ids2.includes('service-noul-shipped'));
+  assert.ok(ids2.includes('service-choice-intent'), '没有选项时该出归类题');
+  assert.ok(!ids2.includes('service-choice-options'));
+});
 
 test('templateCandidates：有选项时给出四选一，且选项数不超上限', () => {
   const domain = requireDomain('math');
