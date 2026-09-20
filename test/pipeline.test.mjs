@@ -136,16 +136,64 @@ test('第三步：noul 题的答案不带 confidence（与 Jev 一致）', async
   assert.equal(envelope.response.answers[qid].noul, 0.02);
 });
 
-test('第三步：多采样时写入 provenance.consistency', async () => {
+test('第三步：agent 用 judgment.samples 做一致性测量，写入 provenance.consistency', async () => {
   const ask = runAsk({ domainKey: '数学', input: MATH_INPUT, pick: 1 });
   const qid = qidOf(ask.question_set);
-  const judgments = [
-    { answers: { [qid]: { scores: { A: 0, B: 4, C: 0, D: 0 } } } },
-    { answers: { [qid]: { scores: { A: 0, B: 4, C: 0, D: 0 } } } },
-    { answers: { [qid]: { scores: { A: 4, B: 0, C: 0, D: 0 } } } },
-  ];
-  const { envelope } = await runDecide({ questionSet: ask.question_set, providerName: 'agent', judgments, judgment: judgments[0], samples: 3 });
-  // provider=agent 只接受单条 judgment；多采样走 deepseek。这里直接验证 consistency 的 Schema 位置
+  const { envelope } = await runDecide({
+    questionSet: ask.question_set,
+    providerName: 'agent',
+    judgment: {
+      schema: 'jev/judgment@1',
+      samples: [
+        { answers: { [qid]: { scores: { A: 0, B: 4, C: 0, D: 0 } } } },
+        { answers: { [qid]: { scores: { A: 0, B: 4, C: 0, D: 0 } } } },
+        { answers: { [qid]: { scores: { A: 4, B: 0, C: 0, D: 0 } } } },
+      ],
+    },
+  });
+  assert.ok(envelope.consistency, '多份判断表应当产出 consistency');
+  assert.equal(envelope.consistency[qid].samples, 3);
+  assert.equal(envelope.consistency[qid].agreement, 0.6667);
+  assert.equal(envelope.consistency[qid].flips, 1);
+  assert.equal(envelope.response.answers[qid].choice, 'B', '多数判断支持 B');
+  assert.equal(envelope.provenance.samples, 3);
+});
+
+test('第三步：--samples N 却只给单条判断时报错，不静默退化成 1 次采样', async () => {
+  const ask = runAsk({ domainKey: '数学', input: MATH_INPUT, pick: 1 });
+  const qid = qidOf(ask.question_set);
+  await assert.rejects(
+    () => runDecide({
+      questionSet: ask.question_set,
+      providerName: 'agent',
+      judgment: { answers: { [qid]: { scores: { A: 0, B: 4, C: 0, D: 0 } } } },
+      samples: 5,
+    }),
+    /无法自行重复采样/,
+  );
+});
+
+test('第三步：judgment.samples 只有 1 条时明确报错', async () => {
+  const ask = runAsk({ domainKey: '数学', input: MATH_INPUT, pick: 1 });
+  const qid = qidOf(ask.question_set);
+  await assert.rejects(
+    () => runDecide({
+      questionSet: ask.question_set,
+      providerName: 'agent',
+      judgment: { samples: [{ answers: { [qid]: { scores: { A: 0, B: 1, C: 0, D: 0 } } } }] },
+    }),
+    /至少要 2 条/,
+  );
+});
+
+test('第三步：单次采样时 consistency 为 null', async () => {
+  const ask = runAsk({ domainKey: '数学', input: MATH_INPUT, pick: 1 });
+  const qid = qidOf(ask.question_set);
+  const { envelope } = await runDecide({
+    questionSet: ask.question_set,
+    providerName: 'agent',
+    judgment: { answers: { [qid]: { scores: { A: 0, B: 4, C: 0, D: 0 } } } },
+  });
   assert.equal(envelope.consistency, null);
 });
 

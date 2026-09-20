@@ -58,6 +58,9 @@ DEEPSEEK_API_KEY=sk-... node "$JEV/scripts/jev.mjs" decide \
   --questions out/数学-questions-*.json --provider deepseek --samples 5 --out out
 ```
 
+让技能自己判断太慢？Agent 可以**独立填多份判断表**做一致性测量（`judgment.samples: [...]`），
+引擎会算出与 `--provider deepseek --samples N` 同样的 `consistency`。
+
 跑一遍完整演示（含三种题型的产物）：
 
 ```bash
@@ -71,7 +74,7 @@ node examples/run-demo.mjs
 | `jev domains` | 列出 5 个内置领域、等级集与 2 个判断来源 |
 | `jev identify --text "…"` | 第一步：领域识别（`--domain` 可直接指定） |
 | `jev ask --domain 数学 --input "…"` | 第二步：出候选；`--pick N` 选定，`--custom "…"` 自定义 |
-| `jev decide --questions q.json …` | 第三步：执行决策，输出固定 JSON |
+| `jev decide --questions q.json …` | 第三步：执行决策，输出固定 JSON（`--judgment` / `--provider` / `--samples` / `--emit-prompt`） |
 | `jev run --domain 数学 --input "…" --judgment j.json` | 一步到底（跳过中间落盘） |
 | `jev verify x.json` | 校验产物是否符合固定契约（`--strict`） |
 | `jev calibrate --records r.json` | 校准统计：ECE / Brier / 可靠性表 |

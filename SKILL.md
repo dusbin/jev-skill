@@ -203,6 +203,24 @@ DEEPSEEK_API_KEY=sk-... node "$JEV/scripts/jev.mjs" decide \
 `--samples N` 会把 N 次采样的分布取平均，并在 `consistency` 里给出**每个问题的一致率与翻转次数**。
 **一致率低的问题必须如实告诉用户「这条结论不稳定」**，不要照旧使用。
 
+### 方式 C：provider=agent 也能测一致性（填多份判断表）
+
+`--samples N` 对 agent 不生效（技能不会替你重复调用自己），但你可以**独立填多份判断表**，
+让引擎做同样的计算。把 `judgment.json` 写成：
+
+```json
+{
+  "schema": "jev/judgment@1",
+  "samples": [
+    { "answers": { "q-xxxx": { "type": "choice", "scores": { "A": 0, "B": 4 }, "basis": ["…"] } } },
+    { "answers": { "q-xxxx": { "type": "choice", "scores": { "A": 1, "B": 3 }, "basis": ["…"] } } }
+  ]
+}
+```
+
+要点：**每次都要重新独立判断一遍**，不要复制第一份改个数字——那样测的是你手抖的幅度，不是判断的稳定性。
+另外 `--samples N` 配单条判断会**直接报错**，不会静默退化成 1 次采样。
+
 ### 常用调参
 
 | 参数 | 作用 | 什么时候用 |
