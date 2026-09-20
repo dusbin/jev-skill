@@ -4,7 +4,7 @@
 
 ```
 用户输入
-   ├─ ① jev identify  → 领域识别（时政/数学/科学/常识/英语），拿不准就问，不猜
+   ├─ ① jev identify  → 领域识别（时政/数学/科学/常识/英语/客服），拿不准就问，不猜
    ├─ ② jev ask       → 生成合理的预定义问题（choice/score/noul），用户选一条或自定义
    └─ ③ jev decide    → 执行决策，输出**固定 JSON**（Jev 原生 answers）
 ```
@@ -71,7 +71,7 @@ node examples/run-demo.mjs
 
 | 命令 | 作用 |
 |---|---|
-| `jev domains` | 列出 5 个内置领域、等级集与 2 个判断来源 |
+| `jev domains` | 列出 6 个内置领域、等级集与 2 个判断来源 |
 | `jev identify --text "…"` | 第一步：领域识别（`--domain` 可直接指定） |
 | `jev ask --domain 数学 --input "…"` | 第二步：出候选；`--pick N` 选定，`--custom "…"` 自定义 |
 | `jev decide --questions q.json …` | 第三步：执行决策，输出固定 JSON（`--judgment` / `--provider` / `--samples` / `--emit-prompt`） |

@@ -8,6 +8,7 @@ import {
   inferType,
   planQuestions,
   templateCandidates,
+  stripOptionList,
   toJevQuestion,
   toJevRequest,
 } from '../lib/questions.mjs';
@@ -42,6 +43,52 @@ test('extractOptions：圈码①②③④ 归一成 1–4', () => {
 test('extractOptions：数字编号必须从 1 连续，否则不认（避免把题干编号当选项）', () => {
   assert.deepEqual(extractOptions('1. 甲 2. 乙 3. 丙').map((x) => x.label), ['1', '2', '3']);
   assert.deepEqual(extractOptions('第 2 步：… 第 5 步：…'), []);
+});
+
+test('extractOptions（回归）：自然语言选项列表（「选项 甲、乙、丙」）', () => {
+  // 这是人给机器指定「可选集合」的最自然写法，也是 Jev 官方 criteria map 的文字版。
+  // 只认 A. … B. … 时，用户按 Jev 的用法提问，工具却说抽不到选项。
+  const a = extractOptions('我的订单已经三天没有发货了 选项 物流、退款、产品故障、其他');
+  assert.deepEqual(a.map((o) => o.label), ['物流', '退款', '产品故障', '其他']);
+  assert.equal(a[0].text, null, '自然语言列表只有名字没有描述，应当是 null 而不是编一个「物流类」');
+
+  assert.deepEqual(
+    extractOptions('客户消息\n选项：咨询、投诉、建议').map((o) => o.label),
+    ['咨询', '投诉', '建议'],
+  );
+  assert.deepEqual(
+    extractOptions('类别: 甲, 乙; 丙').map((o) => o.label),
+    ['甲', '乙', '丙'],
+  );
+  assert.deepEqual(
+    extractOptions('The team discussed options: alpha, beta, gamma').map((o) => o.label),
+    ['alpha', 'beta', 'gamma'],
+  );
+});
+
+test('extractOptions（守卫）：没有列表标记词的普通顿号并列不该被当成选项', () => {
+  for (const text of [
+    '今天我在超市买了苹果、香蕉、橙子，都很新鲜',
+    '北京、上海、广州都是大城市',
+    '会议讨论了方案一、方案二的区别',
+  ]) {
+    assert.deepEqual(extractOptions(text), [], `「${text}」不该抽出选项`);
+  }
+});
+
+test('extractOptions（守卫）：标记词后是句子而非短标签时不抽', () => {
+  for (const text of [
+    '系统提供了选项。用户可以选择不同的分类。',   // 句末标点
+    '该功能的选项，包括颜色和尺寸等很多方面的内容需要确认', // 单项过长
+    '选项 甲、甲',                                // 重复
+  ]) {
+    assert.deepEqual(extractOptions(text), [], `「${text}」不该抽出选项`);
+  }
+});
+
+test('extractOptions：标记式与自然语言两条路并存，标记式优先', () => {
+  const both = extractOptions('下列哪个是它的解？ 选项 甲、乙 A. x=1 B. x=2 C. x=3');
+  assert.deepEqual(both.map((o) => o.label), ['A', 'B', 'C'], '有 A./B. 标记时应当走标记式');
 });
 
 test('extractOptions：抽不到就返回空数组，而不是猜', () => {
@@ -267,6 +314,28 @@ test('toJevRequest 以题目 id 为键', () => {
     state: 'state 内容',
     questions: { 'q-1': { type: 'noul', instructions: '成立吗？' } },
   });
+});
+
+test('stripOptionList（回归）：自然语言选项列表要从 state 里剥掉，标记式不剥', () => {
+  // 不剥的话，「选项 物流、退款、…」里的「退款」会出现在 state 里，
+  // 判断时极易被当成客户说过的话，把物流工单误分到退款队列。
+  assert.equal(
+    stripOptionList('我的订单已经三天没有发货了 选项 物流、退款、产品故障、其他'),
+    '我的订单已经三天没有发货了',
+  );
+  // 标记式选项是题干的一部分（Jev 官方示例里 state 就是完整题目），必须保留
+  const quiz = '解方程 x²-5x+6=0 A. x=1 B. x=2';
+  assert.equal(stripOptionList(quiz), quiz);
+  // 没有选项列表时原样返回
+  const plain = '今天我在超市买了苹果、香蕉、橙子';
+  assert.equal(stripOptionList(plain), plain);
+});
+
+test('planQuestions：自然语言选项进 criteria 后，state 不再包含选项名', () => {
+  const plan = planQuestions({ domainKey: '客服', input: '我的订单已经三天没有发货了 选项 物流、退款、产品故障、其他' });
+  assert.ok(!plan.state.includes('退款'), `state 不该含「退款」：${plan.state}`);
+  assert.ok(plan.state.includes('没有发货'), '客户原话必须保留');
+  assert.deepEqual(plan.detected_options.map((o) => o.label), ['物流', '退款', '产品故障', '其他']);
 });
 
 test('planQuestions：产出候选、校验报告与领域元数据', () => {

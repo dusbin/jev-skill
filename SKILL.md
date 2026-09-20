@@ -1,6 +1,6 @@
 ---
 name: jev
-description: 类 Jev 决策技能。三步流水线：① 用户没给领域就先做领域识别（时政/数学/科学/常识/英语，证据打分 + 置信度，拿不准就问）→ ② 若用户没给现成问题，就按领域与输入生成合理的预定义问题（单选 choice / 打分 score / 判断 noul），用户挑一条或自定义 → ③ 执行决策，输出**固定 JSON**（Jev 原生 answers：选中的选项 + 每项概率 + 置信度 / 连续分数值 + 各等级概率 + 置信度 / 命题为真的概率）。概率由确定性引擎算（softmax + 公开的置信度公式），判断由当前 Agent 或 DeepSeek 模型给出，判断依据逐条留痕。当用户说“jev”“做个决策”“按概率判断”“单选题选哪个”“打个分/评个档”“这个命题成不成立”“给出概率和置信度”“decision layer”“结构化判断”时使用；也适用于需要可追溯、可复现概率而不是一段解释文字的场景。
+description: 类 Jev 决策技能。三步流水线：① 用户没给领域就先做领域识别（时政/数学/科学/常识/英语/客服，证据打分 + 置信度，拿不准就问）→ ② 若用户没给现成问题，就按领域与输入生成合理的预定义问题（单选 choice / 打分 score / 判断 noul），用户挑一条或自定义 → ③ 执行决策，输出**固定 JSON**（Jev 原生 answers：选中的选项 + 每项概率 + 置信度 / 连续分数值 + 各等级概率 + 置信度 / 命题为真的概率）。概率由确定性引擎算（softmax + 公开的置信度公式），判断由当前 Agent 或 DeepSeek 模型给出，判断依据逐条留痕。当用户说“jev”“做个决策”“按概率判断”“单选题选哪个”“打个分/评个档”“这个命题成不成立”“给出概率和置信度”“decision layer”“结构化判断”时使用；也适用于需要可追溯、可复现概率而不是一段解释文字的场景。
 whenToUse: 用户给出一段内容（一道题、一个说法、一条信息、一句命题）并希望得到**带概率与置信度的结构化判决**，而不是一段文字回答。适用于：四选一挑答案、把内容评到有序档位、判断命题是否成立；也适用于给一批内容批量打概率标签、以及事后做校准复盘。不适用于要求生成文本、解释理由、预测未来的问题——那些没有「真值」，本技能会明确挡下来并给出可回答的改写。
 ---
 
@@ -36,7 +36,7 @@ whenToUse: 用户给出一段内容（一道题、一个说法、一条信息、
 
 ```bash
 JEV=/Users/<you>/.../jev-skill      # ← 换成实际路径
-node "$JEV/scripts/jev.mjs" domains # 自检：能列出 5 个领域与 2 个 provider
+node "$JEV/scripts/jev.mjs" domains # 自检：能列出 6 个领域与 2 个 provider
 ```
 
 零 npm 依赖，只要本机 Node ≥ 18。
@@ -69,7 +69,7 @@ D. x=6" --out out
 
 产物 `domain.json`。**看两个字段：**
 
-- `domain.id` —— 判定的领域（`politics` 时政 / `math` 数学 / `science` 科学 / `general` 常识 / `english` 英语 / `other` 其他）
+- `domain.id` —— 判定的领域（`politics` 时政 / `math` 数学 / `science` 科学 / `general` 常识 / `english` 英语 / `service` 客服 / `other` 其他）
 - `decision` —— `auto`（置信度够）/ `ask`（**不许替用户决定**）
 
 **`decision: "ask"` 时必须问用户。** 这是这一步存在的意义：识别器宁可说「我不确定」，也不给一个
@@ -338,7 +338,7 @@ node "$JEV/scripts/jev.mjs" calibrate --decisions out/*-decision-*.json --labels
 ## 领域与判断来源
 
 ```bash
-node "$JEV/scripts/jev.mjs" domains              # 5 个领域 + 等级集 + 2 个 provider
+node "$JEV/scripts/jev.mjs" domains              # 6 个领域 + 等级集 + 2 个 provider
 node "$JEV/scripts/jev.mjs" domains 数学          # 看单个领域的完整定义（词典/等级集/判题要点）
 node "$JEV/scripts/jev.mjs" domains --providers   # 只看判断来源
 ```
@@ -353,6 +353,8 @@ node "$JEV/scripts/jev.mjs" domains --providers   # 只看判断来源
 - **科学**：区分科学与迷思（「人类只用 10% 大脑」判 false）；相关不等于因果
 - **时政**：只判可核查的事实，不判立场；**承认知识时效**，拿不准就把概率压到 0.4–0.6
 - **常识**：判据用安全规范/法规/权威指南；「能不能」类问题要分条件
+- **客服**：判「客户要求什么」而不是「问题出在谁身上」（说「质量差要退钱」诉求是**退款**）；
+  多诉求按 **资金 > 货物 > 解释** 取最靠前的；「其他」是兜底类别不是「不确定」，一旦选中应交人复核
 
 **新增领域**：在 `lib/domains/` 放一个同结构的 `.mjs`，在 `lib/domains/index.mjs` 的 `BUILTIN` 里加一行。
 不需要改任何其他代码，测试会自动覆盖新领域的结构完整性。

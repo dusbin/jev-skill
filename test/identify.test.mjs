@@ -20,6 +20,11 @@ const CASES = [
   ['politics', '国务院近日印发了关于促进民营经济发展的若干措施，该说法是否与公开报道一致？'],
   ['politics', '外交部发言人是否就此事作出回应？'],
   ['politics', '两国元首在峰会期间举行了会谈，这一表述是否符合公开报道？'],
+  ['service', '我的订单已经三天没有发货了'],
+  ['service', '客户说收到的杯子是坏的，要求换新'],
+  ['service', '快递显示已签收但我没收到，麻烦处理一下'],
+  ['service', '这个订单我要退款，已经等了半个月了'],
+  ['service', '我要投诉你们的客服态度，再这样我就给差评'],
 ];
 
 test('五个内置领域：典型输入都能识别正确', () => {
@@ -131,6 +136,28 @@ test('领域识别（回归）：「大面积」不是数学的「面积」', ()
   // 真正的面积计算仍然是数学
   const geo = identifyDomain({ text: '求这个三角形的面积和周长' });
   assert.equal(geo.domain.id, 'math');
+});
+
+test('领域识别（回归）：新增客服领域不会抢走原有领域的输入', () => {
+  // 客服词典含「退货/保修/消费」这类词，与常识的消费维权词汇相邻，
+  // 加领域时必须验证原有领域的典型输入没有被带偏。
+  const mustStay = [
+    ['油锅着火的时候能不能直接用水浇灭？', 'general'],
+    ['劳动合同的试用期最长可以约定多久？', 'general'],
+    ['解方程 x²-5x+6=0，下列哪个是它的解？ A. x=1 B. x=2 C. x=4 D. x=6', 'math'],
+    ['The committee have decided to postpone the meeting until next week.', 'english'],
+    ['光合作用是否只在白天进行？', 'science'],
+    ['国务院近日印发了关于促进民营经济发展的若干措施，该说法是否与公开报道一致？', 'politics'],
+  ];
+  for (const [text, expected] of mustStay) {
+    assert.equal(identifyDomain({ text }).domain.id, expected, `「${text.slice(0, 22)}」应仍是 ${expected}`);
+  }
+});
+
+test('领域识别：客服与常识的边界——判诉求归属 vs 判知识对错', () => {
+  // 同一句话里既有交易语汇也有安全做法时，看的是问的是「哪个流程」还是「做得对不对」
+  assert.equal(identifyDomain({ text: '客户问退货的运费谁承担，怎么处理这个工单' }).domain.id, 'service');
+  assert.equal(identifyDomain({ text: '吃剩的菜放冰箱几天后还能不能吃' }).domain.id, 'general');
 });
 
 test('领域识别：用户指定时直接采用，不再打分', () => {
