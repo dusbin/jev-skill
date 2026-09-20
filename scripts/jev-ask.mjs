@@ -20,7 +20,7 @@
  *   --input <文本>       要被判断的内容（会作为 Jev 的 state）
  *   --in <文件>          从文件读 input
  *   --question <文本>    用户自带的完整问题（与 --custom 等价，保留 --custom 是为了语义清楚）
- *   --pick <序号>        选定第 N 条候选（1 起）
+ *   --pick <序号>        选定第 N 条候选（1 起）；多选用逗号：--pick 1,3
  *   --types <列表>       只保留这些题型：choice,score,noul
  *   --max-options <n>    choice 选项上限，默认 4
  *   --model <名字>       写进请求体的 model 字段，默认 jev-latest
@@ -75,14 +75,17 @@ export async function main(argv = process.argv.slice(2)) {
   const types = parseTypes(flags);
   const maxOptions = flagNum(flags['max-options'], 4);
   const custom = flags.custom ? String(flags.custom) : flags.question ? String(flags.question) : '';
-  const pick = flags.pick !== undefined ? Number(flags.pick) : null;
+  // --pick 1 / --pick 1,2 / --pick 1,2,3 —— 多选即「一次请求问多个问题」，Jev 的推荐用法
+  const pick = flags.pick !== undefined
+    ? String(flags.pick).split(/[,，\s]+/).map((x) => Number(x.trim())).filter((x) => Number.isFinite(x))
+    : null;
 
   const result = runAsk({
     domainKey,
     input: stateOverride || input,
     types,
     maxOptions,
-    pick: Number.isFinite(pick) ? pick : null,
+    pick: pick && pick.length ? (pick.length === 1 ? pick[0] : pick) : null,
     custom,
     model: flags.model ? String(flags.model) : undefined,
   });

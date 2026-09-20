@@ -30,6 +30,109 @@ test('五个内置领域：典型输入都能识别正确', () => {
   }
 });
 
+test('领域识别（回归）：时政新闻里的拉丁字母音译不会被判成英语', () => {
+  // 实测踩过：这句话里只有英语的「中英混排」模式命中 1 分（莫斯科Kapotnya区），
+  // 时政因为缺「乌克兰/俄罗斯/无人机/袭击」等词而拿 0 分，结果被判成英语且置信度 74.3% 自动采用。
+  const r = identifyDomain({ text: '乌克兰无人机袭击俄罗斯莫斯科Kapotnya区的最新图像。' });
+  assert.equal(r.domain.id, 'politics', `应判为时政，实际 ${r.domain.id}`);
+  assert.equal(r.decision, 'auto');
+  assert.ok(r.evidence_mass >= 3, '时政应当至少有 3 分证据');
+});
+
+test('领域识别（回归）：证据量不足时不得自动采用（没有竞争对手 ≠ 确信）', () => {
+  // share 与 margin 两项在「只有一家得分」时都会拉满，
+  // 所以单靠置信度阈值挡不住「一条弱词定案」。这里用证据量下限兜住。
+  const r = identifyDomain({ text: '周围环境发生了变化' });
+  assert.ok(r.evidence_mass > 0, '前提：确实有证据命中');
+  assert.ok(r.evidence_mass < IDENTIFY_TUNING.min_evidence_mass, `前提：证据量 ${r.evidence_mass} 低于下限`);
+  assert.equal(r.decision, 'ask', '证据量不足时必须回问用户，而不是自动采用');
+  assert.ok(r.notes.some((n) => n.includes('证据总量只有')));
+});
+
+test('领域识别：一条强证据（3 分）刚好够定案', () => {
+  // 选「关税」是因为它不含任何弱词——像「光合作用」里还嵌着一个弱词「作用」，
+  // 证据量会变成 4，测不出「刚好 3 分」这条边界。
+  const r = identifyDomain({ text: '关税' });
+  assert.equal(r.evidence_mass, 3);
+  assert.ok(r.evidence_mass >= IDENTIFY_TUNING.min_evidence_mass);
+  assert.equal(r.domain.id, 'politics');
+  assert.equal(r.decision, 'auto');
+});
+
+test('领域识别：时政词典覆盖冲突/军事/能源设施类词汇', () => {
+  for (const text of [
+    '乌克兰无人机袭击莫斯科炼油厂',
+    '俄乌冲突的停火谈判进展如何',
+    '俄军对基辅发动了空袭，防空系统拦截了多枚导弹',
+    '泽连斯基确认打击了俄罗斯境内的炼油设施',
+  ]) {
+    assert.ok(identifyDomain({ text }).domain.id === 'politics', `「${text}」应判为时政`);
+  }
+});
+
+test('领域识别：中英混排模式必须要求英文两侧有空格（避免音译误判）', () => {
+  const transliteration = identifyDomain({ text: '莫斯科Kapotnya区的图像' });
+  const english = transliteration.scores.find((s) => s.id === 'english');
+  assert.ok(
+    !english.hits.some((h) => h.kind === 'pattern' && h.note?.includes('中英混排')),
+    '「莫斯科Kapotnya区」是拉丁字母音译，不该命中中英混排模式',
+  );
+
+  const bilingual = identifyDomain({ text: '这个 phrase 很常见，请记住它' });
+  const en2 = bilingual.scores.find((s) => s.id === 'english');
+  assert.ok(
+    en2.hits.some((h) => h.kind === 'pattern' && h.note?.includes('中英混排')),
+    '真正的双语行文应当命中中英混排模式',
+  );
+});
+
+test('领域识别（回归）：日期不会被算术表达式模式吃掉', () => {
+  // 实测踩过：「2026-09-20」被数学的「算术表达式」模式匹配成减法，给数学凭空加 3 分，
+  // 把时政新闻的置信度从 0.84 压到 0.50，判成了 ask。
+  const r = identifyDomain({ text: '2026-09-20 凌晨发生了大规模袭击，属于国际冲突' });
+  const math = r.scores.find((x) => x.id === 'math');
+  assert.equal(math.raw, 0, `日期不该给数学加分，实际命中 ${JSON.stringify(math.hits.map((h) => h.term))}`);
+  assert.equal(r.domain.id, 'politics');
+  assert.equal(r.decision, 'auto');
+
+  // 美式日期同样要挡住
+  for (const text of ['会议定于 12/31/2026 举行', '报道日期 2026.09.20', '9/20/2026 的袭击']) {
+    const m = identifyDomain({ text }).scores.find((x) => x.id === 'math');
+    assert.equal(m.raw, 0, `「${text}」不该给数学加分，实际 ${m.raw}`);
+  }
+});
+
+test('领域识别：真正的算术表达式仍然照常命中（守卫不能误伤）', () => {
+  for (const text of ['计算 12-5 等于多少', '2+3 等于几', '-5+3 的计算结果', '解方程 x²-5x+6=0']) {
+    const r = identifyDomain({ text });
+    assert.equal(r.domain.id, 'math', `「${text}」应判为数学`);
+    const math = r.scores.find((x) => x.id === 'math');
+    assert.ok(math.raw >= 3, `「${text}」的数学得分应 ≥3，实际 ${math.raw}`);
+  }
+});
+
+test('领域识别（回归）：化学状态标记模式不能吃掉普通英文词', () => {
+  // 「Astra」曾被拆成 A + s（固态标记）而给科学加分
+  const r = identifyDomain({ text: '独立媒体 Astra 对影像做了地理定位' });
+  const sci = r.scores.find((x) => x.id === 'science');
+  const bogus = sci.hits.filter((h) => h.kind === 'pattern' && h.note?.includes('化学状态标记'));
+  assert.equal(bogus.length, 0, `Astra 不该命中化学状态标记，实际 ${JSON.stringify(bogus.map((h) => h.term))}`);
+
+  // 真正的化学状态标记仍然命中
+  const real = identifyDomain({ text: 'NaCl(aq) 与 AgNO3(aq) 反应生成沉淀' });
+  const sci2 = real.scores.find((x) => x.id === 'science');
+  assert.ok(sci2.hits.some((h) => h.note?.includes('化学状态标记')), 'NaCl(aq) 应当命中化学状态标记');
+});
+
+test('领域识别（回归）：「大面积」不是数学的「面积」', () => {
+  const r = identifyDomain({ text: '袭击导致大面积停电' });
+  const math = r.scores.find((x) => x.id === 'math');
+  assert.ok(math.raw <= 0, `「大面积」应当被反证词扣回，实际 ${math.raw}`);
+  // 真正的面积计算仍然是数学
+  const geo = identifyDomain({ text: '求这个三角形的面积和周长' });
+  assert.equal(geo.domain.id, 'math');
+});
+
 test('领域识别：用户指定时直接采用，不再打分', () => {
   const r = identifyDomain({ text: '随便什么内容', hint: '数学' });
   assert.equal(r.source, 'user');

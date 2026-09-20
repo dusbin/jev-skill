@@ -79,12 +79,31 @@
 有了它，`求导数的英语表达` 里数学会被 `英语` 扣分、英语会被 `导数` 扣分，两边拉平 → 置信度低于阈值
 → `decision: "ask"` → 回问用户。**这正是我们希望它做的事**：这种输入确实不该由规则决定。
 
-### 低于阈值时不猜
+### 低于阈值时不猜 —— 两道闸门
 
 ```js
-if (mass <= 0)                    decision = 'ask';   // 完全没有证据
-else if (confidence < 0.55)       decision = 'ask';   // 证据不足以定案
+if (mass <= 0)                            decision = 'ask';   // ① 完全没有证据
+else if (mass < IDENTIFY_TUNING.min_evidence_mass)          // ② 证据量不够
+                                          decision = 'ask';
+else if (confidence < 0.55)               decision = 'ask';   // ③ 有证据但不足以定案
 ```
+
+**② 是补上的第二道闸门，因为 ① 和 ③ 之间存在一个真实的漏洞。** 置信度的三项里，
+`share`（优势占比）与 `margin`（领先幅度）在「只有一家得分」时都会**自动拉满**——
+没有竞争者是它们能拿到的最高分，于是
+
+```
+一条弱词命中 → raw = 1，mass = 1，第二名 = 0
+share_norm = 1.0，margin_norm = 1.0，mass_sat = 1/7 = 0.143
+confidence = 0.35 + 0.35 + 0.043 = 0.743  ≥ 0.55 → 自动采用
+```
+
+0.743 看起来很有把握，实际只靠一个弱词。实测输入「乌克兰无人机袭击俄罗斯莫斯科 Kapotnya
+区的最新图像。」正是这样被判成了**英语**（只有「中英混排」模式命中 1 分，时政词典当时缺
+乌克兰/俄罗斯/无人机/袭击等词），而且判的是 `auto` ——**最坏的情况不是判错，是判错还很有把握**。
+
+「证据量饱和」那一项本来就是为了防这件事，但它的权重只有 0.30，`mass/(mass+6)` 在 mass=1 时
+只贡献 0.043，**压不住另外两项的 0.70**。所以把它升级成一道独立的、不看置信度的硬闸门。
 
 `decision: "ask"` 时 `domain` 被置为 `other`，但 `decided_domain` 与 `candidates` 都保留下来供人判断。
 SKILL.md 里把这条写成红线：**不许替用户决定领域**。
@@ -312,6 +331,7 @@ SKILL.md 把这条写成了汇报要求。
 | `mass_saturation` | `IDENTIFY_TUNING` | 6 | 证据量饱和系数，越大越需要更多证据 |
 | `weights` | `IDENTIFY_TUNING` | 0.35 / 0.35 / 0.30 | 置信度三项权重 |
 | `auto_threshold` | `IDENTIFY_TUNING` | 0.55 | 低于此值判 `ask`（回问用户） |
+| `min_evidence_mass` | `IDENTIFY_TUNING` | 2.5 | 证据量下限，低于它一律判 `ask`。**「没有竞争对手」不等于「确信」**：五项权重里 share 与 margin 在「只有一家得分」时都会拉满，单靠 `auto_threshold` 挡不住「一条弱词定案」 |
 | `tie_ratio` | `IDENTIFY_TUNING` | 0.15 | 前两名差距小于此比例时提示易混淆 |
 | `softmax_temperature` | `ENGINE_TUNING` | 1 | >1 更平（更保守），<1 更尖 |
 | `confidence_margin_weight` | `ENGINE_TUNING` | 0.75 | 优势项与熵项的配比 |

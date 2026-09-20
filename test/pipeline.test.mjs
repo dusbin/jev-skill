@@ -41,6 +41,57 @@ test('第二步：--pick 选中候选后产出合法的 Jev 请求', () => {
   assert.deepEqual(Object.keys(wire).sort(), ['criteria', 'instructions', 'type']);
 });
 
+test('第二步：多选 --pick 1,2 一次请求问多个问题', () => {
+  const r = runAsk({ domainKey: '科学', input: '光合作用是否只在白天进行？', pick: [1, 2] });
+  assert.ok(r.question_set, `应当产出 question_set：${JSON.stringify(r.notes)}`);
+  assert.equal(r.question_set.questions.length, 2);
+  assert.equal(Object.keys(r.question_set.request.questions).length, 2, '两个问题必须在同一个 Jev 请求里');
+  assert.ok(r.picked.length === 2);
+  assert.ok(r.question_set.notes.some((n) => n.includes('一次请求问了 2 个问题')));
+  assert.equal(validateQuestionSet(r.question_set, { maxOptions: 4 }).ok, true);
+});
+
+test('第二步：多选时重复的序号会去重，不会产生两道一样的题', () => {
+  const r = runAsk({ domainKey: '科学', input: '光合作用是否只在白天进行？', pick: [1, 1, 2] });
+  assert.equal(r.question_set.questions.length, 2);
+});
+
+test('第二步：自定义问题与预定义候选可以同时选', () => {
+  // 注意：给了 --custom 之后，用户的问题会排在候选第 1 条，所以预定义候选的序号整体后移。
+  // 这里先确认这件事，再断言两者能并存。
+  const plan = runAsk({ domainKey: '科学', input: '光合作用是否只在白天进行？', custom: '上述说法在中学教科书的范围内成立吗？' });
+  assert.equal(plan.candidates[0].origin, 'user', '自定义问题应当排在候选第 1 条');
+
+  const r = runAsk({
+    domainKey: '科学',
+    input: '光合作用是否只在白天进行？',
+    custom: '上述说法在中学教科书的范围内成立吗？',
+    pick: [3],
+  });
+  assert.ok(r.question_set, JSON.stringify(r.notes));
+  assert.equal(r.question_set.questions.length, 2);
+  const origins = r.question_set.questions.map((q) => q.origin).sort();
+  assert.deepEqual(origins, ['predefined', 'user']);
+  assert.equal(Object.keys(r.question_set.request.questions).length, 2);
+});
+
+test('第二步：--custom 与 --pick 指向同一条时去重，不会问两遍', () => {
+  const r = runAsk({
+    domainKey: '科学',
+    input: '光合作用是否只在白天进行？',
+    custom: '上述说法在中学教科书的范围内成立吗？',
+    pick: [1],
+  });
+  assert.equal(r.question_set.questions.length, 1, '第 1 条就是自定义问题本身，应当去重成一道题');
+});
+
+test('第二步：多选里有一个越界就整体报错，不部分成功', () => {
+  const r = runAsk({ domainKey: '科学', input: '光合作用是否只在白天进行？', pick: [1, 99] });
+  assert.equal(r.question_set, null);
+  assert.match(r.error, /超出候选范围/);
+  assert.match(r.error, /1,99/);
+});
+
 test('第二步：--pick 越界给出明确错误而不是抛异常', () => {
   const r = runAsk({ domainKey: '数学', input: MATH_INPUT, pick: 99 });
   assert.equal(r.question_set, null);
