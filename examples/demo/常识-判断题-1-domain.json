@@ -1,0 +1,89 @@
+{
+  "schema": "jev/domain@1",
+  "input": "油锅着火的时候可以直接用水浇灭。",
+  "source": "rule",
+  "domain": {
+    "id": "general",
+    "name": "常识",
+    "category": "通识"
+  },
+  "decided_domain": {
+    "id": "general",
+    "name": "常识",
+    "category": "通识"
+  },
+  "confidence": 0.7429,
+  "decision": "auto",
+  "margin": 1,
+  "evidence_mass": 1,
+  "scores": [
+    {
+      "id": "general",
+      "name": "常识",
+      "raw": 1,
+      "share": 1,
+      "hits": [
+        {
+          "term": "可以",
+          "weight": 1,
+          "count": 1,
+          "kind": "weak",
+          "score": 1
+        }
+      ]
+    },
+    {
+      "id": "english",
+      "name": "英语",
+      "raw": 0,
+      "share": 0,
+      "hits": []
+    },
+    {
+      "id": "math",
+      "name": "数学",
+      "raw": 0,
+      "share": 0,
+      "hits": []
+    },
+    {
+      "id": "politics",
+      "name": "时政",
+      "raw": 0,
+      "share": 0,
+      "hits": []
+    },
+    {
+      "id": "science",
+      "name": "科学",
+      "raw": 0,
+      "share": 0,
+      "hits": []
+    }
+  ],
+  "candidates": [
+    {
+      "id": "general",
+      "name": "常识",
+      "raw": 1
+    },
+    {
+      "id": "english",
+      "name": "英语",
+      "raw": 0
+    },
+    {
+      "id": "math",
+      "name": "数学",
+      "raw": 0
+    }
+  ],
+  "notes": [
+    "判定依据：「可以」等 1 条证据。"
+  ],
+  "state_injection": {
+    "suspicious": false,
+    "findings": [],
+    "advice": ""
+  }
+}

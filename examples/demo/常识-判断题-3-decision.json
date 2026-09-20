@@ -1,0 +1,109 @@
+{
+  "schema": "jev/decision@1",
+  "kind": "decision",
+  "generated_at": "2026-09-20T14:39:48Z",
+  "generator": {
+    "name": "jev-skill",
+    "version": "0.1.0"
+  },
+  "domain": {
+    "id": "general",
+    "name": "常识",
+    "category": "通识",
+    "source": "user"
+  },
+  "questions": [
+    {
+      "id": "q-7d546603",
+      "type": "noul",
+      "instructions": "上述说法或做法符合日常生活常识与通行做法吗？",
+      "criteria": {
+        "true": "与安全规范、法规或通行做法一致",
+        "false": "与安全规范或法规冲突，或属于常见生活误区"
+      },
+      "origin": "predefined",
+      "template": "general-noul-plausible",
+      "kind": "answer",
+      "score_set": null,
+      "why": "常识的真伪判断有稳定判据（安全规范、通行做法），noul 一个概率即可回答。"
+    }
+  ],
+  "request": {
+    "model": "jev-latest",
+    "state": "油锅着火的时候可以直接用水浇灭。",
+    "questions": {
+      "q-7d546603": {
+        "type": "noul",
+        "instructions": "上述说法或做法符合日常生活常识与通行做法吗？",
+        "criteria": {
+          "true": "与安全规范、法规或通行做法一致",
+          "false": "与安全规范或法规冲突，或属于常见生活误区"
+        }
+      }
+    }
+  },
+  "response": {
+    "model": "jev-agent/agent",
+    "answers": {
+      "q-7d546603": {
+        "type": "noul",
+        "noul": 0.02
+      }
+    },
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  "judgment": {
+    "schema": "jev/judgment@1",
+    "answers": {
+      "q-7d546603": {
+        "type": "noul",
+        "p": 0.02,
+        "basis": [
+          "不支持：水遇到高温食用油会瞬间汽化，把燃烧的油溅开并形成爆燃，火势反而扩大。",
+          "正确做法是关火后盖上锅盖切断氧气（或倒入大量青菜降温），符合消防通行指引。"
+        ]
+      }
+    }
+  },
+  "derivation": {
+    "q-7d546603": {
+      "kind": "noul",
+      "method": "模型直接给出命题为真的概率，未做变换（引擎只做范围裁剪）。",
+      "support": null
+    }
+  },
+  "consistency": null,
+  "provenance": {
+    "provider": "agent",
+    "provider_name": "当前 Agent 的模型",
+    "model": "jev-agent/agent",
+    "samples": 1,
+    "state_injection": {
+      "suspicious": false,
+      "findings": [],
+      "advice": ""
+    },
+    "engine": {
+      "softmax_temperature": 1,
+      "confidence_margin_weight": 0.75,
+      "confidence_formula": "confidence = 0.75·(p₁−p₂)/(1−p₂) + 0.25·(1 − H(p)/ln n)",
+      "score_rule": "Σ i·pᵢ（概率加权期望，Jev 原生定义）",
+      "probability_digits": 4
+    },
+    "limits": {
+      "choice_max_options": 4,
+      "choice_max_options_note": "这是本技能的规格；TypeSafe Jev 自身支持最多 255 个选项。",
+      "score_levels": [
+        2,
+        10
+      ]
+    },
+    "deterministic": true,
+    "notes": [
+      "判断由当前 Agent 提供，未经过网络调用：usage 为 0 是正常的，不代表没做事。"
+    ]
+  }
+}

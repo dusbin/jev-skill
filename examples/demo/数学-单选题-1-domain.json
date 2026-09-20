@@ -1,0 +1,160 @@
+{
+  "schema": "jev/domain@1",
+  "input": "解方程 x²-5x+6=0，下列哪个是它的解？ A. x=1 B. x=2 C. x=4 D. x=6",
+  "source": "rule",
+  "domain": {
+    "id": "math",
+    "name": "数学",
+    "category": "学科类"
+  },
+  "decided_domain": {
+    "id": "math",
+    "name": "数学",
+    "category": "学科类"
+  },
+  "confidence": 0.9053,
+  "decision": "auto",
+  "margin": 1,
+  "evidence_mass": 13,
+  "scores": [
+    {
+      "id": "math",
+      "name": "数学",
+      "raw": 13,
+      "share": 1,
+      "hits": [
+        {
+          "term": "+6=0",
+          "weight": 3,
+          "count": 1,
+          "kind": "pattern",
+          "note": "出现算术表达式",
+          "score": 3
+        },
+        {
+          "term": "方程",
+          "weight": 3,
+          "count": 1,
+          "kind": "strong",
+          "score": 3
+        },
+        {
+          "term": "x²",
+          "weight": 3,
+          "count": 1,
+          "kind": "pattern",
+          "note": "出现幂次记号",
+          "score": 3
+        },
+        {
+          "term": "解",
+          "weight": 1,
+          "count": 2,
+          "kind": "weak",
+          "score": 2
+        },
+        {
+          "term": "x²",
+          "weight": 2,
+          "count": 1,
+          "kind": "pattern",
+          "note": "出现平方/立方符号",
+          "score": 2
+        }
+      ]
+    },
+    {
+      "id": "english",
+      "name": "英语",
+      "raw": 0,
+      "share": 0,
+      "hits": [
+        {
+          "term": "A",
+          "weight": 2,
+          "count": 1,
+          "kind": "pattern",
+          "note": "出现英语功能词",
+          "score": 2
+        },
+        {
+          "term": "方程",
+          "weight": -2,
+          "count": 1,
+          "kind": "exclude",
+          "score": -2
+        }
+      ]
+    },
+    {
+      "id": "science",
+      "name": "科学",
+      "raw": -2,
+      "share": 0,
+      "hits": [
+        {
+          "term": "方程",
+          "weight": -2,
+          "count": 1,
+          "kind": "exclude",
+          "score": -2
+        }
+      ]
+    },
+    {
+      "id": "general",
+      "name": "常识",
+      "raw": -3,
+      "share": 0,
+      "hits": [
+        {
+          "term": "方程",
+          "weight": -3,
+          "count": 1,
+          "kind": "exclude",
+          "score": -3
+        }
+      ]
+    },
+    {
+      "id": "politics",
+      "name": "时政",
+      "raw": -3,
+      "share": 0,
+      "hits": [
+        {
+          "term": "方程",
+          "weight": -3,
+          "count": 1,
+          "kind": "exclude",
+          "score": -3
+        }
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "id": "math",
+      "name": "数学",
+      "raw": 13
+    },
+    {
+      "id": "english",
+      "name": "英语",
+      "raw": 0
+    },
+    {
+      "id": "science",
+      "name": "科学",
+      "raw": -2
+    }
+  ],
+  "notes": [
+    "判定依据：「+6=0」「方程」「x²」「解」「x²」等 5 条证据。"
+  ],
+  "state_injection": {
+    "suspicious": false,
+    "findings": [],
+    "advice": ""
+  }
+}

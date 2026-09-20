@@ -1,0 +1,48 @@
+{
+  "schema": "jev/questions@1",
+  "generated_at": "2026-09-20T14:39:48Z",
+  "domain": {
+    "id": "general",
+    "name": "常识",
+    "category": "通识"
+  },
+  "state": "油锅着火的时候可以直接用水浇灭。",
+  "max_options": 4,
+  "questions": [
+    {
+      "id": "q-7d546603",
+      "type": "noul",
+      "instructions": "上述说法或做法符合日常生活常识与通行做法吗？",
+      "origin": "predefined",
+      "template": "general-noul-plausible",
+      "label": "判断题：该说法是否符合生活常识",
+      "why": "常识的真伪判断有稳定判据（安全规范、通行做法），noul 一个概率即可回答。",
+      "criteria": {
+        "true": "与安全规范、法规或通行做法一致",
+        "false": "与安全规范或法规冲突，或属于常见生活误区"
+      }
+    }
+  ],
+  "request": {
+    "model": "jev-latest",
+    "state": "油锅着火的时候可以直接用水浇灭。",
+    "questions": {
+      "q-7d546603": {
+        "type": "noul",
+        "instructions": "上述说法或做法符合日常生活常识与通行做法吗？",
+        "criteria": {
+          "true": "与安全规范、法规或通行做法一致",
+          "false": "与安全规范或法规冲突，或属于常见生活误区"
+        }
+      }
+    }
+  },
+  "notes": [
+    "题目来源：领域模板 general-noul-plausible"
+  ],
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "warnings": []
+  }
+}

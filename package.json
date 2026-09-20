@@ -1,0 +1,37 @@
+{
+  "name": "jev-skill",
+  "version": "0.1.0",
+  "description": "类 Jev 决策技能：领域识别 → 预定义问题生成与选择 → 执行 choice/score/noul 决策并输出 Jev 兼容的固定 JSON。零 npm 依赖，仅需本机 Node ≥18。",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "jev": "scripts/jev.mjs",
+    "jev-identify": "scripts/jev-identify.mjs",
+    "jev-ask": "scripts/jev-ask.mjs",
+    "jev-decide": "scripts/jev-decide.mjs",
+    "jev-verify": "scripts/jev-verify.mjs",
+    "jev-domains": "scripts/jev-domains.mjs",
+    "jev-calibrate": "scripts/jev-calibrate.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "demo": "node examples/run-demo.mjs",
+    "verify": "node scripts/jev-verify.mjs examples/demo/decision.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "keywords": [
+    "skill",
+    "jev",
+    "system-one",
+    "decision",
+    "calibration",
+    "probability",
+    "decision-layer",
+    "决策",
+    "概率"
+  ],
+  "license": "MIT"
+}

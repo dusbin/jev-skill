@@ -1,0 +1,147 @@
+{
+  "schema": "jev/decision@1",
+  "kind": "decision",
+  "generated_at": "2026-09-20T14:39:48Z",
+  "generator": {
+    "name": "jev-skill",
+    "version": "0.1.0"
+  },
+  "domain": {
+    "id": "math",
+    "name": "数学",
+    "category": "学科类",
+    "source": "user"
+  },
+  "questions": [
+    {
+      "id": "q-16b0a7b0",
+      "type": "choice",
+      "instructions": "下列选项中，哪一个是该题的正确答案？",
+      "criteria": {
+        "A": "x=1",
+        "B": "x=2",
+        "C": "x=4",
+        "D": "x=6"
+      },
+      "origin": "predefined",
+      "template": "math-choice-options",
+      "kind": "answer",
+      "score_set": null,
+      "why": "输入里已经带了选项，直接用它们做 criteria，模型只需要在给定选项里挑一个。"
+    }
+  ],
+  "request": {
+    "model": "jev-latest",
+    "state": "解方程 x²-5x+6=0，下列哪个是它的解？ A. x=1 B. x=2 C. x=4 D. x=6",
+    "questions": {
+      "q-16b0a7b0": {
+        "type": "choice",
+        "instructions": "下列选项中，哪一个是该题的正确答案？",
+        "criteria": {
+          "A": "x=1",
+          "B": "x=2",
+          "C": "x=4",
+          "D": "x=6"
+        }
+      }
+    }
+  },
+  "response": {
+    "model": "jev-agent/agent",
+    "answers": {
+      "q-16b0a7b0": {
+        "type": "choice",
+        "choice": "B",
+        "probabilities": {
+          "A": 0.0174,
+          "B": 0.9478,
+          "C": 0.0174,
+          "D": 0.0174
+        },
+        "confidence": 0.913
+      }
+    },
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  "judgment": {
+    "schema": "jev/judgment@1",
+    "answers": {
+      "q-16b0a7b0": {
+        "type": "choice",
+        "scores": {
+          "A": 0,
+          "B": 4,
+          "C": 0,
+          "D": 0
+        },
+        "basis": [
+          "支持 B（x=2）：把 x=2 代入原式得 4-10+6=0，等式成立 → 2 是 x²-5x+6=0 的根。",
+          "不支持 A（x=1）：代入得 1-5+6=2≠0 → 不是根。",
+          "不支持 C（x=4）：代入得 16-20+6=2≠0 → 不是根。",
+          "不支持 D（x=6）：代入得 36-30+6=12≠0 → 不是根。"
+        ]
+      }
+    }
+  },
+  "derivation": {
+    "q-16b0a7b0": {
+      "kind": "choice",
+      "method": "softmax(scores / 1)，再按 4 位归一",
+      "probabilities": {
+        "A": 0.0174,
+        "B": 0.9478,
+        "C": 0.0174,
+        "D": 0.0174
+      },
+      "stats": {
+        "n": 4,
+        "top": 0.947915,
+        "runner_up": 0.017362,
+        "entropy": 0.26183,
+        "normalized_entropy": 0.188871,
+        "normalized_margin": 0.946995
+      },
+      "scores": {
+        "A": 0,
+        "B": 4,
+        "C": 0,
+        "D": 0
+      },
+      "temperature": 1
+    }
+  },
+  "consistency": null,
+  "provenance": {
+    "provider": "agent",
+    "provider_name": "当前 Agent 的模型",
+    "model": "jev-agent/agent",
+    "samples": 1,
+    "state_injection": {
+      "suspicious": false,
+      "findings": [],
+      "advice": ""
+    },
+    "engine": {
+      "softmax_temperature": 1,
+      "confidence_margin_weight": 0.75,
+      "confidence_formula": "confidence = 0.75·(p₁−p₂)/(1−p₂) + 0.25·(1 − H(p)/ln n)",
+      "score_rule": "Σ i·pᵢ（概率加权期望，Jev 原生定义）",
+      "probability_digits": 4
+    },
+    "limits": {
+      "choice_max_options": 4,
+      "choice_max_options_note": "这是本技能的规格；TypeSafe Jev 自身支持最多 255 个选项。",
+      "score_levels": [
+        2,
+        10
+      ]
+    },
+    "deterministic": true,
+    "notes": [
+      "判断由当前 Agent 提供，未经过网络调用：usage 为 0 是正常的，不代表没做事。"
+    ]
+  }
+}

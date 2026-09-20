@@ -1,0 +1,89 @@
+{
+  "schema": "jev/domain@1",
+  "input": "人类的大脑只被使用了 10%，剩下 90% 处于休眠状态。",
+  "source": "rule",
+  "domain": {
+    "id": "science",
+    "name": "科学",
+    "category": "学科类"
+  },
+  "decided_domain": {
+    "id": "science",
+    "name": "科学",
+    "category": "学科类"
+  },
+  "confidence": 0.775,
+  "decision": "auto",
+  "margin": 1,
+  "evidence_mass": 2,
+  "scores": [
+    {
+      "id": "science",
+      "name": "科学",
+      "raw": 2,
+      "share": 1,
+      "hits": [
+        {
+          "term": "大脑",
+          "weight": 2,
+          "count": 1,
+          "kind": "medium",
+          "score": 2
+        }
+      ]
+    },
+    {
+      "id": "english",
+      "name": "英语",
+      "raw": 0,
+      "share": 0,
+      "hits": []
+    },
+    {
+      "id": "general",
+      "name": "常识",
+      "raw": 0,
+      "share": 0,
+      "hits": []
+    },
+    {
+      "id": "math",
+      "name": "数学",
+      "raw": 0,
+      "share": 0,
+      "hits": []
+    },
+    {
+      "id": "politics",
+      "name": "时政",
+      "raw": 0,
+      "share": 0,
+      "hits": []
+    }
+  ],
+  "candidates": [
+    {
+      "id": "science",
+      "name": "科学",
+      "raw": 2
+    },
+    {
+      "id": "english",
+      "name": "英语",
+      "raw": 0
+    },
+    {
+      "id": "general",
+      "name": "常识",
+      "raw": 0
+    }
+  ],
+  "notes": [
+    "判定依据：「大脑」等 1 条证据。"
+  ],
+  "state_injection": {
+    "suspicious": false,
+    "findings": [],
+    "advice": ""
+  }
+}

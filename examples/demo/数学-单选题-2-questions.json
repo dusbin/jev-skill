@@ -1,0 +1,52 @@
+{
+  "schema": "jev/questions@1",
+  "generated_at": "2026-09-20T14:39:48Z",
+  "domain": {
+    "id": "math",
+    "name": "数学",
+    "category": "学科类"
+  },
+  "state": "解方程 x²-5x+6=0，下列哪个是它的解？ A. x=1 B. x=2 C. x=4 D. x=6",
+  "max_options": 4,
+  "questions": [
+    {
+      "id": "q-16b0a7b0",
+      "type": "choice",
+      "instructions": "下列选项中，哪一个是该题的正确答案？",
+      "origin": "predefined",
+      "template": "math-choice-options",
+      "label": "四选一：哪一个是正确答案",
+      "why": "输入里已经带了选项，直接用它们做 criteria，模型只需要在给定选项里挑一个。",
+      "criteria": {
+        "A": "x=1",
+        "B": "x=2",
+        "C": "x=4",
+        "D": "x=6"
+      }
+    }
+  ],
+  "request": {
+    "model": "jev-latest",
+    "state": "解方程 x²-5x+6=0，下列哪个是它的解？ A. x=1 B. x=2 C. x=4 D. x=6",
+    "questions": {
+      "q-16b0a7b0": {
+        "type": "choice",
+        "instructions": "下列选项中，哪一个是该题的正确答案？",
+        "criteria": {
+          "A": "x=1",
+          "B": "x=2",
+          "C": "x=4",
+          "D": "x=6"
+        }
+      }
+    }
+  },
+  "notes": [
+    "题目来源：领域模板 math-choice-options"
+  ],
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "warnings": []
+  }
+}

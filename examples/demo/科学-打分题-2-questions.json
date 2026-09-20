@@ -1,0 +1,53 @@
+{
+  "schema": "jev/questions@1",
+  "generated_at": "2026-09-20T14:39:48Z",
+  "domain": {
+    "id": "science",
+    "name": "科学",
+    "category": "学科类"
+  },
+  "state": "人类的大脑只被使用了 10%，剩下 90% 处于休眠状态。",
+  "max_options": 4,
+  "questions": [
+    {
+      "id": "q-ae84426c",
+      "type": "score",
+      "instructions": "该说法与当前科学共识的符合程度处于哪一档？",
+      "origin": "predefined",
+      "template": "science-score-conformity",
+      "label": "打分题：该说法与科学共识的符合程度",
+      "why": "科学迷思多半「半对」，二选一会把「含迷思」误判为对或错；四档打分能定位到「错在哪一层」。",
+      "criteria": [
+        "违背科学事实：核心结论与公认科学结论相反",
+        "含常见迷思：方向大致对，但夹杂一个教科书级别的错误认知",
+        "基本正确：结论正确，表述或适用范围不够严谨",
+        "完全符合：结论与表述都与当前科学共识一致"
+      ],
+      "score_set": "科学符合程度"
+    }
+  ],
+  "request": {
+    "model": "jev-latest",
+    "state": "人类的大脑只被使用了 10%，剩下 90% 处于休眠状态。",
+    "questions": {
+      "q-ae84426c": {
+        "type": "score",
+        "instructions": "该说法与当前科学共识的符合程度处于哪一档？",
+        "criteria": [
+          "违背科学事实：核心结论与公认科学结论相反",
+          "含常见迷思：方向大致对，但夹杂一个教科书级别的错误认知",
+          "基本正确：结论正确，表述或适用范围不够严谨",
+          "完全符合：结论与表述都与当前科学共识一致"
+        ]
+      }
+    }
+  },
+  "notes": [
+    "题目来源：领域模板 science-score-conformity"
+  ],
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "warnings": []
+  }
+}

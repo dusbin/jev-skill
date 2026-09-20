@@ -1,0 +1,153 @@
+{
+  "schema": "jev/decision@1",
+  "kind": "decision",
+  "generated_at": "2026-09-20T14:39:48Z",
+  "generator": {
+    "name": "jev-skill",
+    "version": "0.1.0"
+  },
+  "domain": {
+    "id": "science",
+    "name": "科学",
+    "category": "学科类",
+    "source": "user"
+  },
+  "questions": [
+    {
+      "id": "q-ae84426c",
+      "type": "score",
+      "instructions": "该说法与当前科学共识的符合程度处于哪一档？",
+      "criteria": [
+        "违背科学事实：核心结论与公认科学结论相反",
+        "含常见迷思：方向大致对，但夹杂一个教科书级别的错误认知",
+        "基本正确：结论正确，表述或适用范围不够严谨",
+        "完全符合：结论与表述都与当前科学共识一致"
+      ],
+      "origin": "predefined",
+      "template": "science-score-conformity",
+      "kind": "answer",
+      "score_set": "科学符合程度",
+      "why": "科学迷思多半「半对」，二选一会把「含迷思」误判为对或错；四档打分能定位到「错在哪一层」。"
+    }
+  ],
+  "request": {
+    "model": "jev-latest",
+    "state": "人类的大脑只被使用了 10%，剩下 90% 处于休眠状态。",
+    "questions": {
+      "q-ae84426c": {
+        "type": "score",
+        "instructions": "该说法与当前科学共识的符合程度处于哪一档？",
+        "criteria": [
+          "违背科学事实：核心结论与公认科学结论相反",
+          "含常见迷思：方向大致对，但夹杂一个教科书级别的错误认知",
+          "基本正确：结论正确，表述或适用范围不够严谨",
+          "完全符合：结论与表述都与当前科学共识一致"
+        ]
+      }
+    }
+  },
+  "response": {
+    "model": "jev-agent/agent",
+    "answers": {
+      "q-ae84426c": {
+        "type": "score",
+        "score": 0.5014,
+        "legend": {
+          "0": "违背科学事实：核心结论与公认科学结论相反",
+          "1": "含常见迷思：方向大致对，但夹杂一个教科书级别的错误认知",
+          "2": "基本正确：结论正确，表述或适用范围不够严谨",
+          "3": "完全符合：结论与表述都与当前科学共识一致"
+        },
+        "probabilities": {
+          "0": 0.5861,
+          "1": 0.3555,
+          "2": 0.0292,
+          "3": 0.0292
+        },
+        "confidence": 0.3584
+      }
+    },
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
+  "judgment": {
+    "schema": "jev/judgment@1",
+    "answers": {
+      "q-ae84426c": {
+        "type": "score",
+        "scores": {
+          "0": 3,
+          "1": 2.5,
+          "2": 0,
+          "3": 0
+        },
+        "basis": [
+          "落在第 0 档：功能性核磁共振与脑损伤研究都显示全脑区域均有活动，不存在「90% 休眠」的区域 → 该说法属于已被证伪的常见迷思。",
+          "第 1 档（含迷思但方向大致对）不适用：这里不是「不够严谨」，而是核心结论与科学共识相反。"
+        ]
+      }
+    }
+  },
+  "derivation": {
+    "q-ae84426c": {
+      "kind": "score",
+      "method": "softmax(scores / 1)，再按 4 位归一",
+      "probabilities": {
+        "0": 0.5861,
+        "1": 0.3555,
+        "2": 0.0292,
+        "3": 0.0292
+      },
+      "stats": {
+        "n": 4,
+        "top": 0.58613,
+        "runner_up": 0.355506,
+        "entropy": 0.887056,
+        "normalized_entropy": 0.639876,
+        "normalized_margin": 0.357838
+      },
+      "scores": {
+        "0": 3,
+        "1": 2.5,
+        "2": 0,
+        "3": 0
+      },
+      "temperature": 1,
+      "expected_score": 0.5014,
+      "rounded_score": 0
+    }
+  },
+  "consistency": null,
+  "provenance": {
+    "provider": "agent",
+    "provider_name": "当前 Agent 的模型",
+    "model": "jev-agent/agent",
+    "samples": 1,
+    "state_injection": {
+      "suspicious": false,
+      "findings": [],
+      "advice": ""
+    },
+    "engine": {
+      "softmax_temperature": 1,
+      "confidence_margin_weight": 0.75,
+      "confidence_formula": "confidence = 0.75·(p₁−p₂)/(1−p₂) + 0.25·(1 − H(p)/ln n)",
+      "score_rule": "Σ i·pᵢ（概率加权期望，Jev 原生定义）",
+      "probability_digits": 4
+    },
+    "limits": {
+      "choice_max_options": 4,
+      "choice_max_options_note": "这是本技能的规格；TypeSafe Jev 自身支持最多 255 个选项。",
+      "score_levels": [
+        2,
+        10
+      ]
+    },
+    "deterministic": true,
+    "notes": [
+      "判断由当前 Agent 提供，未经过网络调用：usage 为 0 是正常的，不代表没做事。"
+    ]
+  }
+}
