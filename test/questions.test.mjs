@@ -11,7 +11,7 @@ import {
   toJevQuestion,
   toJevRequest,
 } from '../lib/questions.mjs';
-import { requireDomain } from '../lib/domains/index.mjs';
+import { DOMAINS, requireDomain } from '../lib/domains/index.mjs';
 import { validateQuestion, validateQuestionSet, LIMITS } from '../lib/schema.mjs';
 
 /* ---------------------------- 选项抽取 ---------------------------- */
@@ -58,6 +58,16 @@ test('extractOptions：标签重复则整体放弃', () => {
 
 test('inferType：有选项就是 choice', () => {
   assert.equal(inferType('随便什么', [{ label: 'A' }, { label: 'B' }]), 'choice');
+});
+
+test('inferType（回归）：以「吗」结尾的中文是非问句默认判为判断题', () => {
+  // 时政领域最核心的问法「与公开报道一致吗」一度不在词表里，导致 --custom 传标准问法反而编译不了
+  assert.equal(inferType('这一说法与公开报道一致吗？'), 'noul');
+  assert.equal(inferType('该说法是否属实吗？'), 'noul');
+  assert.equal(inferType('这件事有这回事吗'), 'noul');
+  assert.equal(inferType('这个说法可信吗？'), 'noul');
+  // 不带「吗」的价值判断仍不猜（由 checkTruthApt 去处理）
+  assert.equal(inferType('这项政策好不好？'), null);
 });
 
 test('inferType：按问法词推断', () => {
@@ -195,6 +205,37 @@ test('customQuestion：推不出题型时明确报错而不是瞎猜', () => {
   const r = customQuestion({ text: '给我讲讲量子力学', domain: requireDomain('science') });
   assert.equal(r.ok, false);
   assert.match(r.reason, /无法判断题型/);
+});
+
+test('customQuestion（回归）：判断题用领域自己的判据，而不是通用话术', () => {
+  // 通用话术（「该陈述成立／不成立」）对事实核查毫无帮助——
+  // 时政的判据必须写成「时间、主体、事件与公开报道相符」，模型才知道要核对什么。
+  const pol = customQuestion({ text: '该说法与公开报道一致吗？', domain: requireDomain('时政') });
+  assert.match(pol.question.criteria.true, /时间、主体、事件/);
+  assert.match(pol.question.criteria.false, /公开报道/);
+  assert.ok(!pol.question.criteria.true.includes('完整推导'), '不该退回通用话术');
+
+  const sci = customQuestion({ text: '这个说法成立吗？', domain: requireDomain('科学') });
+  assert.match(sci.question.criteria.true, /科学共识/);
+
+  const eng = customQuestion({ text: '这句话的语法是否正确？', domain: requireDomain('英语') });
+  assert.match(eng.question.criteria.true, /主谓一致/);
+});
+
+test('每个内置领域都必须定义 noulCriteria', () => {
+  for (const d of DOMAINS) {
+    assert.ok(typeof d.noulCriteria?.true === 'string' && d.noulCriteria.true.length > 8, `${d.id} 缺 noulCriteria.true`);
+    assert.ok(typeof d.noulCriteria?.false === 'string' && d.noulCriteria.false.length > 8, `${d.id} 缺 noulCriteria.false`);
+    assert.notEqual(d.noulCriteria.true, d.noulCriteria.false);
+  }
+});
+
+test('领域模板与 --custom 共用同一份 noul 判据（不会两处各写一遍后走样）', () => {
+  const domain = requireDomain('时政');
+  const fromTemplate = templateCandidates({ domain, input: '某种说法' }).find((c) => c.type === 'noul');
+  const fromCustom = customQuestion({ text: '该说法与公开报道一致吗？', domain }).question;
+  assert.deepEqual(fromTemplate.criteria, fromCustom.criteria);
+  assert.deepEqual(fromTemplate.criteria, domain.noulCriteria);
 });
 
 test('customQuestion：没有等级集的领域做 score 要报错', () => {

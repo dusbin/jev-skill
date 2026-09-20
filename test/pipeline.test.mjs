@@ -5,6 +5,7 @@ import { validateDecision, validateJevResponse, validateQuestionSet } from '../l
 import { resolveProvider, listProviders, DEFAULT_PROVIDER } from '../lib/providers/index.mjs';
 import { buildJudgePrompt, judgmentSkeleton, normalizeJudgment, parseJudgmentText } from '../lib/judge.mjs';
 import { requireDomain } from '../lib/domains/index.mjs';
+import { checkTruthApt } from '../lib/questions.mjs';
 
 const MATH_INPUT = '解方程 x²-5x+6=0，下列哪个是它的解？\nA. x=1\nB. x=2\nC. x=4\nD. x=6';
 
@@ -73,6 +74,54 @@ test('第二步：自定义问题与预定义候选可以同时选', () => {
   const origins = r.question_set.questions.map((q) => q.origin).sort();
   assert.deepEqual(origins, ['predefined', 'user']);
   assert.equal(Object.keys(r.question_set.request.questions).length, 2);
+});
+
+test('第二步：多条 --custom 各自独立成题，放在同一个请求里（复合输入必须拆开）', () => {
+  // 真实场景：「重大：A。此外，B。」——一个请求里问两件事，判断会互相污染，
+  // 必须拆成两条独立问题。引擎能指出这一点，但拆分只能由调用方做。
+  const r = runAsk({
+    domainKey: '时政',
+    input: '美国在中东的所有大使馆均发布了安全警报。此外，特朗普总统已取消明天日程。',
+    custom: [
+      '美国在中东的所有大使馆均发布了安全警报，这一说法与公开报道一致吗？',
+      '特朗普总统已取消明天日程，这一说法与公开报道一致吗？',
+    ],
+  });
+  assert.equal(r.candidates.filter((c) => c.origin === 'user').length, 2);
+
+  const picked = runAsk({
+    domainKey: '时政',
+    input: '美国在中东的所有大使馆均发布了安全警报。此外，特朗普总统已取消明天日程。',
+    custom: [
+      '美国在中东的所有大使馆均发布了安全警报，这一说法与公开报道一致吗？',
+      '特朗普总统已取消明天日程，这一说法与公开报道一致吗？',
+    ],
+    pick: [],
+  });
+  assert.ok(picked.question_set, JSON.stringify(picked.notes));
+  assert.equal(picked.question_set.questions.length, 2, '两条自定义问题应当各自成题');
+  assert.ok(picked.question_set.questions.every((q) => q.type === 'noul'));
+  assert.equal(Object.keys(picked.question_set.request.questions).length, 2, '必须落在同一个 Jev 请求里');
+  // 拆分理由记在 plan.notes，产物里记的是「一次请求问了 N 个问题」——两处都要能查到
+  assert.ok(picked.notes.some((n) => n.includes('一个调用一个问题')));
+  assert.ok(picked.question_set.notes.some((n) => n.includes('一次请求问了 2 个问题')));
+});
+
+test('第二步：多条 --custom 里有一条编译失败就整体报错，不部分成功', () => {
+  const r = runAsk({
+    domainKey: '时政',
+    input: '某地说法。',
+    custom: ['该说法与公开报道一致吗？', '给我讲讲量子力学'],   // 第二条推不出题型
+    pick: [],
+  });
+  assert.equal(r.question_set, null);
+  assert.match(r.error, /只有 1 条通过了编译/);
+});
+
+test('第二步：checkTruthApt 能指出复合输入在问多件事', () => {
+  const r = checkTruthApt('美国大使馆发布警报了吗？特朗普取消日程了吗？', requireDomain('时政'));
+  assert.equal(r.ok, false);
+  assert.ok(r.reasons.some((x) => x.includes('多件事')));
 });
 
 test('第二步：--custom 与 --pick 指向同一条时去重，不会问两遍', () => {

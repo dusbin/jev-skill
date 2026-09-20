@@ -41,7 +41,7 @@ import { requireDomain } from '../lib/domains/index.mjs';
 import { flagNum, stableId } from '../lib/util.mjs';
 
 export async function main(argv = process.argv.slice(2)) {
-  const { flags, positional, quiet } = commonArgs(argv);
+  const { flags, positional, quiet, repeated } = commonArgs(argv);
 
   if (!flags.domain && !flags.prev) {
     fail('缺少 --domain', '先跑第一步，或直接指定领域（时政/数学/科学/常识/英语）。可用 `jev domains` 查看全部。');
@@ -74,7 +74,12 @@ export async function main(argv = process.argv.slice(2)) {
   domainKey = domain.id;
   const types = parseTypes(flags);
   const maxOptions = flagNum(flags['max-options'], 4);
-  const custom = flags.custom ? String(flags.custom) : flags.question ? String(flags.question) : '';
+  // --custom 可重复：一句输入里有两件事时，拆成两条各自独立的问题（一个调用一个问题），
+  // 再放进同一个请求并行判断。单条时行为不变。
+  const customRaw = [...(repeated?.custom || []), ...(repeated?.question || [])]
+    .map((x) => (typeof x === 'string' ? x : ''))
+    .filter((x) => x.trim());
+  const custom = customRaw.length === 0 ? '' : customRaw.length === 1 ? customRaw[0] : customRaw;
   // --pick 1 / --pick 1,2 / --pick 1,2,3 —— 多选即「一次请求问多个问题」，Jev 的推荐用法
   const pick = flags.pick !== undefined
     ? String(flags.pick).split(/[,，\s]+/).map((x) => Number(x.trim())).filter((x) => Number.isFinite(x))
