@@ -1,6 +1,7 @@
 # 生成产物
 out/
 out-*/
+examples/demo/          # 由 examples/run-demo.mjs 生成，跑一次就有（只有 generated_at 会变）
 
 # 本地密钥（技能会自动读取，绝不入库）
 .env
